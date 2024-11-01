@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: es-cluster
+  name: es-cluster
+  namespace: middleware
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: es-cluster
+  serviceName: es-cluster
+  template:
+    metadata:
+      labels:
+        app: es-cluster
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: es-cluster
+        image: 'harbor.xx.com/library/elasticsearch:6.8.5'
+        imagePullPolicy: IfNotPresent
+        ports:
+          - containerPort: 9200
+            name: db
+            protocol: TCP
+          - containerPort: 9300
+            name: transport
+            protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 1Gi
+        env:
+          - name: ES_JAVA_OPTS
+            value: '-Xms512m -Xmx512m'
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: TZ
+            value: Asia/Shanghai
+        volumeMounts:
+        - name: es-cluster-data
+          mountPath: /usr/share/elasticsearch/data
+        - name: es-cluster-config
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+        - name: es-cluster-cert
+          mountPath: /usr/share/elasticsearch/config/certs
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+      initContainers:
+        - name: es-cluster-init
+          image: 'harbor.xx.com/library/alpine:3.20.3'
+          imagePullPolicy: IfNotPresent
+          command:
+            - /sbin/sysctl
+            - '-w'
+            - vm.max_map_count=262144
+          securityContext:
+            privileged: true
+        - name: es-cluster-permissions
+          image: 'harbor.xx.com/library/alpine:3.20.3'
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - '-c'
+            - 'chown -R 1000:1000 /usr/share/elasticsearch/data'
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: es-cluster-data
+              mountPath: /usr/share/elasticsearch/data
+
+      volumes:
+        - name: es-cluster-config
+          configMap:
+            name: es-cluster-config
+        - name: es-cluster-cert
+          configMap:
+            name: es-cluster-cert
+        - hostPath:
+            path: /etc/localtime
+            type: File
+          name: localtime
+  volumeClaimTemplates:
+    - metadata:
+        name: es-cluster-data
+      spec:
+        storageClassName: csi-rbd-sc
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+

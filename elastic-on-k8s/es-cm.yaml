@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-cluster-config
+  namespace: middleware
+data:
+  elasticsearch.yml: |
+    cluster.name: es-cluster
+    node.name: ${POD_NAME}                       
+    node.data: true
+    node.master: true
+    node.max_local_storage_nodes: 3
+    path.data: /usr/share/elasticsearch/data
+    http.port: 9200
+    transport.tcp.port: 9300
+    network.host: 0.0.0.0
+    discovery.zen.ping.unicast.hosts: ["es-cluster-0.es-cluster:9300","es-cluster-1.es-cluster:9300","es-cluster-2.es-cluster:9300"]         
+    discovery.zen.minimum_master_nodes: 2
+    discovery.zen.fd.ping_timeout: 120s
+    discovery.zen.fd.ping_retries: 6
+    discovery.zen.fd.ping_interval: 30s
+    http.cors.enabled: true
+    http.cors.allow-origin: "*"
+    xpack.security.enabled: true
+    xpack.security.transport.ssl.enabled: true
+    xpack.security.transport.ssl.verification_mode: certificate
+    xpack.security.transport.ssl.keystore.path: certs/elastic-certificates.p12
+    xpack.security.transport.ssl.truststore.path: certs/elastic-certificates.p12

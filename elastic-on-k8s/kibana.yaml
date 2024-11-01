@@ -1,0 +1,65 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: middleware
+  labels:
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+            topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: kibana
+          image: harbor.xx.com/library/kibana:6.8.5
+          volumeMounts:
+            - name: kibana-config
+              mountPath: /usr/share/kibana/config/kibana.yml
+              readOnly: true
+              subPath: kibana.yml
+            - name: timezone
+              mountPath: /etc/localtime
+              readOnly: true
+          ports:
+            - containerPort: 5601
+              name: ui
+              protocol: TCP
+          env:
+          - name: TZ
+            value: Asia/Shanghai
+
+      volumes:
+        - name: kibana-config
+          configMap:
+            name: kibana
+        - name: timezone
+          hostPath:
+            path: /usr/share/zoneinfo/Asia/Shanghai
+
