@@ -1,7 +1,7 @@
 # 介绍
 官网：https://www.elastic.co/docs
-截止目前最新版本：8.15
-测试版本：6.8、7.15、8.14
+截止目前最新版本：8.15 
+测试版本：6.8、7.15、8.14 
 Elasticsearch8.14不需要手动开启认证，安装时候自动引导开启
 # 目标
 在k8s中部署 elasticsearch 集群，存储使用ceph 块存储。并配置
@@ -26,7 +26,22 @@ openssl pkcs12 -info -nodes -in certs/elastic-stack-ca.p12
 ```
 openssl pkcs12 -in certs/elastic-stack-ca.p12 -nodes -nokeys -clcerts | openssl x509 -enddate -noout
 ```
+# 部署
+```
 
+kubectl create ns middleware
+# 生成集群间通信证书
+bash init.sh
+
+#kubectl create cm es-cluster-cert --from-file=certs/elastic-certificates.p12 --from-file=certs/elastic-stack-ca.p12  -n middleware
+kubectl create cm es-cluster-cert --from-file=certs/ -n middleware
+
+kubectl apply -f es-cm.yaml
+kubectl apply -f es-sts.yaml
+kubectl apply -f es-svc.yaml
+kubectl exec -it es-cluster-0 -n middleware -- sh
+./bin/elasticsearch-setup-passwords interactive
+```
 # 配置文件说明
 ```
 xpack.security.transport.ssl.enabled: true
