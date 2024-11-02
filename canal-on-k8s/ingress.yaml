@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  name: canal.xxx.net.cn
+  namespace: middleware
+spec:
+  rules:
+  - host: canal.xxx.net.cn
+    http:
+      paths:
+      - backend:
+          service:
+            name: canal-admin
+            port:
+              number: 8089
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - canal.xxx.net.cn
+    secretName: xxx.net.cn
+

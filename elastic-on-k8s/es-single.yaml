@@ -1,0 +1,96 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: es-conf
+  namespace: middleware
+data:
+  elasticsearch.yml: |
+    cluster.name: "test-cluster"
+    bootstrap.memory_lock: false
+    network.host: 0.0.0.0
+    xpack.security.enabled: true
+    xpack.security.transport.ssl.enabled: true
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: elasticsearch
+  namespace: middleware
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticsearch
+  template:
+    metadata:
+      name: elasticsearch
+      labels:
+        app: elasticsearch
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+      containers:
+        - name: elasticsearch
+          image: harbor.xx.com/library/elasticsearch:6.8.5
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: db
+              containerPort: 9200
+              protocol: TCP
+            - name: transport
+              containerPort: 9300
+              protocol: TCP
+          env:
+             - name: discovery.type
+               value: single-node
+
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+            - name: config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              subPath: elasticsearch.yml
+
+      volumes:
+        - name: data
+          hostPath:
+            path: /opt/elasticsearch/data
+        - name: config
+          configMap:
+            name: es-conf
+            items:
+              - key: elasticsearch.yml
+                path: elasticsearch.yml
+
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: elasticsearch
+  namespace: middleware
+spec:
+  ports:
+    - protocol: TCP
+      port: 19200
+      targetPort: 9200
+      name: db
+    - protocol: TCP
+      port: 9300
+      targetPort: 9300
+      name: transport
+  selector:
+    app: elasticsearch
+

@@ -1,0 +1,130 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: canal-server
+  namespace: middleware
+data:
+  admin_manager: "canal-admin.middleware:8089"
+  admin_port: "11110"
+  admin_user: "admin"
+  admin_password: "4ACFE3202A5FF5CF467898FC58AAB1D615029441"
+  admin_register_auto: "true"
+  admin_register_cluster: "test"
+  admin_register_name: "test"
+
+---
+
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: canal-server
+  namespace: middleware
+  labels:
+    app.kubernetes.io/name: canal-server
+    app: canal-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: canal-server
+      app: canal-server
+  template:
+    metadata:
+      name: canal-server
+      labels:
+        app.kubernetes.io/name: canal-server
+        app: canal-server
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - canal
+      containers:
+        - name: canal-server
+          image: 'harbor.xxx.net.cn/library/canal-server:v1.1.7'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: tcp
+              containerPort: 11111
+              protocol: TCP
+          env:
+            - name: JAVA_OPTS
+              value: '-server -XX:ActiveProcessorCount=2 -XX:MaxRAM=2147483648 -XX:MaxRAMPercentage=90.0'
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+            - name: SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: 'metadata.labels[''app'']'
+            - name: STS_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+            - name: canal.register.ip
+              value: $(POD_NAME).$(SERVICE_NAME).$(STS_NAMESPACE)
+            - name: canal.register.name
+              value: $(POD_NAME).$(SERVICE_NAME).$(STS_NAMESPACE)
+            - name: canal.admin.manager
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-server
+                  key: admin_manager
+            - name: canal.admin.port
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-server
+                  key: admin_port
+            - name: canal.admin.register.auto
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-server
+                  key: admin_register_auto
+            - name: canal.admin.user
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-server
+                  key: admin_user
+            - name: canal.admin.passwd
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-server
+                  key: admin_password
+            - name: canal.admin.register.cluster
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-server
+                  key: admin_register_cluster
+      restartPolicy: Always
+  serviceName: canal-server
+  revisionHistoryLimit: 10
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: canal-server
+  namespace: middleware
+spec:
+  ports:
+    - protocol: TCP
+      port: 11110
+      targetPort: 11110
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: canal-server
+    app: canal-server
+
+

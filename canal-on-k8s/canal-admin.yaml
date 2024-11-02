@@ -1,0 +1,102 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: canal-admin
+  namespace: middleware
+data:
+  admin_user: "admin"
+  admin_password: "admin"
+  datasource_address: "192.168.1.1:3306"
+  datasource_database: "canaladmin"
+  datasource_username: "root"
+  datasource_password: "123456"
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: canal-admin
+  namespace: middleware
+  labels:
+    app.kubernetes.io/name: canal-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: canal-admin
+  template:
+    metadata:
+      name: canal-admin
+      labels:
+        app.kubernetes.io/name: canal-admin
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - canal
+      containers:
+        - name: canal-admin
+          image: 'harbor.xxx.net.cn/library/canal-admin:v1.1.7'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: web
+              containerPort: 8089
+              protocol: TCP
+          env:
+            - name: JAVA_OPTS
+              value: '-server -XX:ActiveProcessorCount=2 -XX:MaxRAM=2147483648 -XX:MaxRAMPercentage=90.0'
+            - name: server.port
+              value: '8089'
+            - name: canal.adminUser
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-admin
+                  key: admin_user
+            - name: canal.adminPasswd
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-admin
+                  key: admin_password
+            - name: spring.datasource.address
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-admin
+                  key: datasource_address
+            - name: spring.datasource.database
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-admin
+                  key: datasource_database
+            - name: spring.datasource.username
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-admin
+                  key: datasource_username
+            - name: spring.datasource.password
+              valueFrom:
+                configMapKeyRef:
+                  name: canal-admin
+                  key: datasource_password
+      restartPolicy: Always
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: canal-admin
+  namespace: middleware
+spec:
+  ports:
+    - protocol: TCP
+      port: 8089
+      targetPort: 8089
+  selector:
+    app.kubernetes.io/name: canal-admin
+---
