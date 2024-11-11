@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: middleware
+spec:
+  selector:
+     matchLabels:
+        app: kafka
+  serviceName: kafka
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+            topologyKey: kubernetes.io/hostname
+      containers:
+      - name: kafka
+        imagePullPolicy: IfNotPresent
+        image: harbor.xxx.net.cn/library/kafka:3.8.0
+        env:
+        - name: KAFKA_HEAP_OPTS
+          value : "-Xmx256M -Xms256M"
+        - name: KAFKA_OPTS
+          value: "-Dlogging.level=INFO"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: TZ
+          value: Asia/Shanghai
+        - name: CLUSTER_ID
+          value: "6PMpHYL9QkeyXRj9Nrp4KA"
+        command:
+        - sh
+        - -exc
+        - |
+          export CLUSTER_ID="6PMpHYL9QkeyXRj9Nrp4KA"
+          export KAFKA_NODE_ID=${HOSTNAME##*-}
+          export KAFKA_LISTENERS="PLAINTEXT://${POD_NAME}.kafka:9092,CONTROLLER://${POD_NAME}.kafka:9093"
+          export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_NAME}.kafka:9092
+          exec /etc/kafka/docker/run
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: 10m
+        ports:
+        - containerPort: 9092
+          name: server
+        volumeMounts:
+        - name: kafka-data
+          mountPath: /var/lib/kafka
+        - name: kafka-config
+          mountPath: /mnt/shared/config/server.properties
+          subPath: server.properties
+        - mountPath: /etc/localtime
+          name: localtime
+          readOnly: true
+      volumes:
+        - name: kafka-config
+          configMap:
+            name: kafka-config
+        - hostPath:
+            path: /etc/localtime
+            type: File
+          name: localtime
+
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        storageClassName: csi-rbd-sc
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Gi
+
