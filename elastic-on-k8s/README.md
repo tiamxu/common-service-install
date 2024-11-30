@@ -39,7 +39,7 @@ kubectl create cm es-cluster-cert --from-file=certs/ -n middleware
 kubectl apply -f es-cm.yaml
 kubectl apply -f es-sts.yaml
 kubectl apply -f es-svc.yaml
-kubectl exec -it es-cluster-0 -n middleware -- ./bin/elasticsearch-setup-passwords interactive
+kubectl exec -it elasticsearch-0 -n middleware -- ./bin/elasticsearch-setup-passwords interactive
 ```
 # 配置文件说明
 ```

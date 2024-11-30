@@ -7,9 +7,7 @@ data:
   server.properties: |
     process.roles=broker,controller
     controller.quorum.voters=0@kafka-0.kafka:9093,1@kafka-1.kafka:9093,2@kafka-2.kafka:9093
-    listeners=PLAINTEXT://${POD_NAME}.kafka:9092,CONTROLLER://${POD_NAME}.kafka:9093
     inter.broker.listener.name=PLAINTEXT
-    advertised.listeners=PLAINTEXT://${POD_NAME}.kafka:9092
     controller.listener.names=CONTROLLER
     listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL
     num.network.threads=3

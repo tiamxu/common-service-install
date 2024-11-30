@@ -18,10 +18,9 @@ spec:
     spec:
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            preference:
-              matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
               - key: app
                 operator: In
                 values:
@@ -33,12 +32,11 @@ spec:
               - key: app
                 operator: In
                 values:
-                - elasticsearch
+                - kibana
             topologyKey: kubernetes.io/hostname
-
       containers:
         - name: kibana
-          image: harbor.xx.com/library/kibana:6.8.5
+          image: harbor.xxx.net.cn/library/kibana:6.8.5
           volumeMounts:
             - name: kibana-config
               mountPath: /usr/share/kibana/config/kibana.yml
@@ -51,6 +49,11 @@ spec:
             - containerPort: 5601
               name: ui
               protocol: TCP
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+
           env:
           - name: TZ
             value: Asia/Shanghai

@@ -1,0 +1,94 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-es
+  namespace: middleware
+data:
+  vector-es.toml: >
+    #data_dir = "/data/vector/vector_es"
+
+
+    [sources.dev_from_kafka]
+
+    type = "kafka"
+
+    bootstrap_servers = "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+
+    group_id = "testid"
+
+    topics = [
+      "test"
+    ]
+
+    auto_offset_reset = "largest" #largest\beginning
+
+    commit_interval_ms = 1_000
+
+    fetch_wait_max_ms = 50
+
+    decoding.codec = "json"
+
+
+    [sources.dev_from_kafka.librdkafka_options]
+
+    "client.id" = "vector-test-dev"
+
+    "fetch.error.backoff.ms" = "1000"
+
+    "socket.send.buffer.bytes" = "100"
+
+
+    [transforms.dev_parse_kafka_logs]
+
+    type = "remap"
+
+    inputs = ["dev_from_kafka"]
+
+    source = '''
+
+    del(.host)
+
+    del(.headers)
+
+    del(.message_key)
+   
+    del(.offset)
+    
+    del(.source_type)
+
+    del(.topic)
+   
+    del(.partition)
+
+    #.timestamp = to_unix_timestamp(to_timestamp!(.timestamp), unit:"milliseconds")
+
+    '''
+
+
+    [sinks.dev_out_es]
+
+    type = "elasticsearch"
+
+    inputs = [ "dev_parse_kafka_logs" ]
+
+    api_version = "auto"
+
+    compression = "none"
+
+    endpoints = [ "http://elasticsearch-0.elasticsearch:9200","http://elasticsearch-1.elasticsearch:9200","http://elasticsearch-2.elasticsearch:9200" ]
+
+    auth.strategy = "basic"
+
+    auth.user = "elastic"
+
+    auth.password = "sdr@123,"
+
+    mode = "bulk"
+
+    bulk.index = "stdout-%Y-%m-%d"
+
+    request.concurrency = "adaptive"
+
+    healthcheck.enabled = true
+

@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: GRPC
+  name: milvus
+  namespace: middleware
+
+spec:
+  rules:
+    - host: milvus-dev.xxxx.net
+      http:
+        paths:
+          - backend:
+              service:
+                name: milvus-dev-milvus
+                port:
+                  number: 19530
+            path: /
+            pathType: Prefix
+  tls:
+    - hosts:
+        - milvus-dev.xxxx.net
+      secretName: xxxx.net

@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: middleware
+  name: vector
+  labels:
+    app.kubernetes.io/name: vector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "vector"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: "vector"
+        vector.dev/exclude: "true"
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                - ingress-nginx
+            topologyKey: kubernetes.io/hostname
+      containers:
+        - image: 'harbor.xxxx.net.cn/library/vector:0.42.0-alpine'
+          imagePullPolicy: IfNotPresent
+          name: vector
+          command: [vector]
+          args: ["--config-toml", "/etc/vector/vector-*.toml"]
+          env:
+            - name: VECTOR_LOG
+              value: "info"
+            - name: VECTOR_SELF_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: VECTOR_SELF_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          volumeMounts:
+            - name: vector-kafka-config
+              mountPath: /etc/vector/vector-kafka.toml
+              subPath: vector-kafka.toml
+            - name: data
+              mountPath: "/var/lib/vector"
+            - mountPath: /var/log/
+              name: var-log
+              readOnly: true
+            - mountPath: /var/lib
+              name: var-lib
+              readOnly: true
+            - mountPath: /host/proc
+              name: procfs
+              readOnly: true
+            - mountPath: /host/sys
+              name: sysfs
+              readOnly: true
+            - name: vector-es-config
+              mountPath: /etc/vector/vector-es.toml
+              subPath: vector-es.toml
+      volumes:
+        - name: vector-kafka-config
+          configMap:
+            name: vector-kafka
+        - name: vector-es-config
+          configMap:
+            name: vector-es
+        - name: data
+          hostPath:
+            path: "/var/lib/vector"
+        - hostPath:
+            path: /var/log/
+          name: var-log
+        - hostPath:
+            path: /var/lib/
+          name: var-lib
+        - hostPath:
+            path: /proc
+          name: procfs
+        - hostPath:
+            path: /sys
+          name: sysfs
+      hostAliases:
+      - ip: "10.11.3.217"
+        hostnames:
+        - "kafka-0.kafka"
+      - ip: "10.11.14.144"
+        hostnames: 
+        - "kafka-1.kafka"
+      - ip: "10.11.10.166"
+        hostnames:
+        - "kafka-2.kafka"
+      - ip: "10.11.3.209"
+        hostnames:
+        - "elasticsearch-0.elasticsearch"
+      - ip: "10.11.14.142"
+        hostnames:
+        - "elasticsearch-1.elasticsearch"
+      - ip: "10.11.10.164"
+        hostnames:
+        - "elasticsearch-2.elasticsearch"
+

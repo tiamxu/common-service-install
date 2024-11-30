@@ -1,0 +1,152 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-kafka
+  namespace: middleware
+data:
+  vector-kafka.toml: >
+    data_dir = "/data/vector/vector_file"
+
+    [sources.dev_from_file]
+
+    type = "file"
+
+    include = [
+       "/data1/**/**/**/*.log"
+      ]
+    exclude = [
+     "/data1/**/**/**/op-task.log",
+     ]
+    read_from = "end" #beginning\end
+
+    max_line_bytes = 2048576
+
+    max_read_bytes = 2048576
+
+    multiline.start_pattern = '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3})'
+
+    multiline.condition_pattern = '(?m)^[\s]*$|(?m)^[\s|\W].*$|(?m)^(Error|Caused|java|org|com|net|io|[a-zA-Z]).+$|(?m)^\}.*$'
+
+    multiline.mode = "continue_through"
+
+    multiline.timeout_ms = 100
+
+    fingerprint.strategy = "checksum"
+
+    fingerprint.lines = 20
+
+    fingerprint.ignored_header_bytes = 100
+
+
+    [transforms.dev_parse_file_logs]
+
+    type = "remap"
+
+    inputs = ["dev_from_file"]
+
+    source = '''
+
+    . |= parse_regex!(string!(.message), r'^(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}) \[(?P<thread>\w\S+|\w+|(\w+\W+)+|(\w+\W+\w+)\S+|\w+-\w+-\w+|\w+-\w+)\] (?P<level>[A-Z]+) (?P<message>[\s\S]+.*)$')
+
+    del(.host)
+
+    del(.source_type)
+
+    tmp=split!(.file,"/")
+    
+    .appname=tmp[3]
+
+    if contains(string!(.appname),"-task") {
+      abort
+    }
+
+    #del(.file)
+
+    '''
+
+
+    [sinks.dev_to_kafka]
+
+    type = "kafka"
+
+    inputs = [ "dev_parse_file_logs" ]
+
+    bootstrap_servers = "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+
+    topic = "applogs"
+
+    encoding.codec = "json"
+
+    #测试环境配置
+
+    [sources.test_from_file]
+
+    type = "file"
+
+    include = [
+       "/data/**/**/**/*.log"
+      ]
+
+    exclude = [
+     "/data/**/**/**/op-task.log"
+     ]
+
+    read_from = "end" #beginning\end
+
+    max_line_bytes = 2048576
+
+    max_read_bytes = 2048576
+
+    multiline.start_pattern = '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3})'
+
+    multiline.condition_pattern = '(?m)^[\s]*$|(?m)^[\s|\W].*$|(?m)^(Error|Caused|java|org|com|net|io|[a-zA-Z]).+$|(?m)^\}.*$'
+
+    multiline.mode = "continue_through"
+
+    multiline.timeout_ms = 100
+
+    fingerprint.strategy = "checksum"
+
+    fingerprint.lines = 20
+
+    fingerprint.ignored_header_bytes = 100
+
+
+    [transforms.test_parse_file_logs]
+
+    type = "remap"
+
+    inputs = ["test_from_file"]
+
+    source = '''
+
+    . |= parse_regex!(string!(.message), r'^(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3}) \[(?P<thread>\w\S+|\w+|(\w+\W+)+|(\w+\W+\w+)\S+|\w+-\w+-\w+|\w+-\w+)\] (?P<level>[A-Z]+) (?P<message>[\s\S]+.*)$')
+
+    del(.host)
+
+    del(.source_type)
+
+    tmp=split!(.file,"/")
+    
+    .appname=tmp[-2]
+
+    if contains(string!(.appname),"-task") {
+      abort
+    }
+
+    #del(.file)
+
+    '''
+
+    [sinks.test_to_kafka]
+
+    type = "kafka"
+
+    inputs = [ "test_parse_file_logs" ]
+
+    bootstrap_servers = "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+
+    topic = "test-applogs"
+
+    encoding.codec = "json"

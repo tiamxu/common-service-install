@@ -16,10 +16,9 @@ spec:
     spec:
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            preference:
-              matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
               - key: app
                 operator: In
                 values:
@@ -31,7 +30,7 @@ spec:
               - key: app
                 operator: In
                 values:
-                - elasticsearch
+                - kafka
             topologyKey: kubernetes.io/hostname
       containers:
       - name: kafka
@@ -76,17 +75,11 @@ spec:
         - mountPath: /etc/localtime
           name: localtime
           readOnly: true
-        #- name: kafka-config
-        #  mountPath: /tmp/server.properties
-        #  subPath: server.properties
       volumes:
         - hostPath:
             path: /etc/localtime
             type: File
           name: localtime
-      #  - name: kafka-config
-      #    configMap:
-      #      name: kafka-config
       securityContext:
         runAsUser: 1000
         fsGroup: 1000

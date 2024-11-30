@@ -1,0 +1,67 @@
+# This sample is used to deploy milvus with external dependencies
+# change the <parameters> to match your environment
+apiVersion: milvus.io/v1beta1
+kind: Milvus
+metadata:
+  name: milvus-dev
+  namespace: middleware
+  labels:
+    app: milvus
+spec:
+  mode: cluster
+  components:
+    enableRollingUpdate: true
+    imageUpdateMode: rollingUpgrade
+    proxy:
+      replicas: 1
+    dataNode:
+      replicas: 1
+    indexNode:
+      replicas: 1
+    queryNode:
+      replicas: 1
+    mixCoord:
+      replicas: 1
+    image: harbor.xxxx.net.cn/library/milvus:v2.4.15
+    imagePullPolicy: IfNotPresent 
+    resources:
+      limits:
+        cpu: '2'
+        memory: 4Gi
+      requests:
+        cpu: '0.1'
+        memory: 128Mi
+  config:
+    etcd:
+      rootPath: milvus-dev
+    msgChannel:
+      chanNamePrefix:
+        cluster: milvus-dev
+    minio:
+      bucketName: milvus-dev
+      # config the prefix of the bucket milvus will use
+      rootPath: milvus/milvus-dev
+    kafka:
+      # securityProtocol supports: PLAINTEXT, SSL, SASL_PLAINTEXT, SASL_SSL 
+      securityProtocol: PLAINTEXT
+      # saslMechanisms supports: PLAIN, SCRAM-SHA-256, SCRAM-SHA-512
+      saslMechanisms: PLAIN
+      saslUsername: ""
+      saslPassword: ""
+  dependencies: 
+    etcd:
+      external: true
+      endpoints: ["192.168.1.158:2379"]
+    storage:
+      external: true
+      endpoint: "192.168.1.246:9000"
+      secretRef: "milvus-s3-secret"
+      # if you want to use s3 check ./milvus_s3.yaml
+      type: MinIO
+    msgStreamType: "kafka"
+    kafka:
+      external: true
+      brokerList: 
+        - "kafka-0.kafka.middleware:9092"
+        - "kafka-2.kafka.middleware:9092"
+        - "kafka-1.kafka.middleware:9092"

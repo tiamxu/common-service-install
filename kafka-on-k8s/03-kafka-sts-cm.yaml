@@ -16,10 +16,9 @@ spec:
     spec:
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            preference:
-              matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
               - key: app
                 operator: In
                 values:
@@ -31,7 +30,7 @@ spec:
               - key: app
                 operator: In
                 values:
-                - elasticsearch
+                - kafka
             topologyKey: kubernetes.io/hostname
       containers:
       - name: kafka
@@ -46,6 +45,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: POD_IP
           valueFrom:
             fieldRef:
@@ -61,7 +64,7 @@ spec:
           export CLUSTER_ID="6PMpHYL9QkeyXRj9Nrp4KA"
           export KAFKA_NODE_ID=${HOSTNAME##*-}
           export KAFKA_LISTENERS="PLAINTEXT://${POD_NAME}.kafka:9092,CONTROLLER://${POD_NAME}.kafka:9093"
-          export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_NAME}.kafka:9092
+          export KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${POD_NAME}.kafka.${NAMESPACE}:9092
           exec /etc/kafka/docker/run
         resources:
           requests:

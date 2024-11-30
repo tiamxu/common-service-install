@@ -1,0 +1,160 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-kafka
+  namespace: middleware
+  labels:
+    app.kubernetes.io/name: vector
+data:
+  vector-kafka.toml: >
+    data_dir = "/var/lib/vector"
+
+    [sources.ingress_logs]
+
+    type = "kubernetes_logs"
+
+    delay_deletion_ms = 60_000
+
+    #exclude_paths_glob_patterns = [ "**/exclude/**" ]
+
+    #extra_field_selector = "metadata.name=ingress-nginx-controller"
+
+    extra_label_selector = "app.kubernetes.io/name=ingress-nginx"
+
+    #extra_namespace_label_selector = "app.kubernetes.io/name!=ingress-nginx"
+    
+    fingerprint_lines = 100
+
+    ignore_older_secs = 600
+
+    #ingestion_timestamp_field = ".ingest_timestamp"
+
+    oldest_first = true
+
+    read_from = "end"
+
+    timezone = "local"
+
+    max_line_bytes = 204857
+
+    max_read_bytes = 204857
+
+
+    [transforms.parse_ingress_logs]
+
+    type = "remap"
+
+    inputs = ["ingress_logs"]
+
+    source = '''
+
+    #. |= parse_nginx_log!(.message,  "ingress_upstreaminfo") 
+
+      
+    if (.stream == "stderr") {
+
+     #. |= parse_nginx_log!(.message,  "error")
+
+     abort
+
+    } else {
+    
+     . |= parse_nginx_log!(.message,  "ingress_upstreaminfo")
+
+    }
+
+    if contains(string!(.http_user_agent),"okhttp") {
+      abort
+    }
+
+    if contains(string!(.http_user_agent),"sdk/1.0") {
+      abort
+    }
+
+    tmp=split!(.request," ")
+
+    .method=tmp[0]
+
+    .url=tmp[1]
+
+    .version=tmp[2]
+
+    del(.request)
+
+    del(.source_type)
+
+    del(.file)
+   
+    del(.stream)
+
+    del(.ingest_timestamp)
+    
+    del(.message)
+ 
+    del(.kubernetes)
+
+    '''
+
+    [transforms.parse_ingress_error]
+
+    type = "remap"
+
+    inputs = ["ingress_logs"]
+
+    source = '''
+ 
+    if (.stream == "stderr") {
+
+     . |= parse_regex!(.message, r'^(?P<timestamp>\\d+/\\d+/\\d+ \\d+:\\d+:\\d+) \\[(?P<severity>\\w+)\\] (?P<pid>\\d+)#(?P<tid>\\d+):(?: \\*(?P<connid>\\d+))? (?P<message>.*)$')    
+
+    } else {
+
+      abort
+
+    }
+
+    del(.kubernetes)
+ 
+    del(.ingest_timestamp)
+
+    del(.source_type)
+
+    del(.file)
+
+    '''
+
+    #[sinks.out]
+
+    #inputs = ["parse_ingress_error"]
+
+    #type = "console"
+
+    #encoding.codec = "json"
+
+
+    [sinks.to_kafka]
+
+    type = "kafka"
+
+    inputs = [ "parse_ingress_logs" ]
+
+    bootstrap_servers = "kafka-0.kafka.middleware:9092,kafka-1.kafka.middleware:9092,kafka-2.kafka.middleware:9092"
+
+    topic = "ingress-logs"
+
+    encoding.codec = "json"
+
+
+    #[sinks.error_to_kafka]
+
+    #type = "kafka"
+
+    #inputs = [ "parse_ingress_error" ]
+
+    #bootstrap_servers = "kafka-0.kafka.middleware:9092,kafka-1.kafka.middleware:9092,kafka-2.kafka.middleware:9092"
+
+    #topic = "ingress-error"
+
+    #encoding.codec = "json"
+

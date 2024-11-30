@@ -1,0 +1,129 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-kafka
+  namespace: middleware
+  labels:
+    app.kubernetes.io/name: vector
+data:
+  vector-kafka.toml: >
+    data_dir = "/var/lib/vector"
+
+    [sources.k8sapp_logs]
+
+    type = "kubernetes_logs"
+
+    auto_partial_merge = true
+
+    delay_deletion_ms = 60_000
+
+
+    #extra_field_selector = "metadata.namespace=xxxx"
+
+    #extra_label_selector = "name=xxxx-askdoctor-task"
+
+    extra_namespace_label_selector = "app.kubernetes.io/name in(basedata, bxxx, test),app.kubernetes.io/name!=ingress-nginx"
+    
+    fingerprint_lines = 10
+
+    ignore_older_secs = 600
+
+    #ingestion_timestamp_field = ".ingest_timestamp"
+
+    oldest_first = true
+
+    read_from = "end"
+
+    timezone = "local"
+
+    max_line_bytes = 32_768
+
+    max_read_bytes = 2_048
+
+
+    [transforms.parse_k8sapp_logs]
+
+    type = "remap"
+
+    #inputs = ["k8sapp_logs"]
+
+    inputs = ["reduce_multiline"]
+
+    source = '''
+
+    .container_name = del(.kubernetes.container_name)
+
+    .namespace = del(.kubernetes.pod_namespace)
+
+    .node_name = del(.kubernetes.pod_node_name)
+
+    del(.host)
+
+    del(.source_type)
+
+    del(.file)
+   
+    del(.stream)
+
+    del(.ingest_timestamp)
+ 
+    del(.timestamp_end)
+    
+    #del(.message)
+ 
+    del(.kubernetes)
+
+    '''
+
+
+    [transforms.reduce_multiline]
+
+    type = "reduce"
+
+    inputs = [ "k8sapp_logs" ]
+
+    expire_after_ms = 30_000
+
+    flush_period_ms = 1_000
+
+    merge_strategies."message" = "concat_newline"
+
+    starts_when.type = "vrl"
+
+    starts_when.source = '''
+
+    if exists(.message) && match(string!(.message), r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}.\d{3})') {
+     true;
+    } else {
+     false;
+    }
+
+    '''
+
+    max_events = 100
+
+    group_by = [ "file","kubernetes.pod_name" ]
+ 
+
+    [sinks.out]
+
+    inputs = ["parse_k8sapp_logs"]
+
+    type = "console"
+
+    encoding.codec = "json"
+
+
+    [sinks.to_kafka]
+
+    type = "kafka"
+
+    inputs = [ "parse_k8sapp_logs" ]
+
+    bootstrap_servers = "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+
+    topic = "test"
+
+    encoding.codec = "json"
+

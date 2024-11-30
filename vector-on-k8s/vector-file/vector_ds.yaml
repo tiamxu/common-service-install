@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+#kind: Deployment
+kind: DaemonSet
+metadata:
+  namespace: middleware
+  name: vector-ingress
+  labels:
+    app.kubernetes.io/name: vector-ingress
+spec:
+  #replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "vector-ingress"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: "vector-ingress"
+    spec:
+      serviceAccountName: vector
+      #affinity:
+        #nodeAffinity:
+        #  preferredDuringSchedulingIgnoredDuringExecution:
+        #  - weight: 1
+        #    preference:
+        #      matchExpressions:
+        #      - key: app
+        #        operator: In
+        #        values:
+        #        - elasticsearch
+        #podAffinity:
+        #  requiredDuringSchedulingIgnoredDuringExecution:
+        #  - labelSelector:
+        #      matchExpressions:
+        #      - key: app.kubernetes.io/name
+        #        operator: In
+        #        values:
+        #        - ingress-nginx
+        #    topologyKey: kubernetes.io/hostname
+      containers:
+        - image: 'harbor.xxx.net.cn/library/vector:0.42.0-alpine'
+          imagePullPolicy: IfNotPresent
+          name: vector
+          command: [vector]
+          args: ["--config-toml", "/etc/vector/vector-*.toml"]
+          env:
+            #- name: VECTOR_LOG
+            #  value: "info"
+            - name: VECTOR_SELF_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            #- name: VECTOR_SELF_POD_NAMESPACE
+            #  valueFrom:
+            #    fieldRef:
+            #      fieldPath: metadata.namespace
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          volumeMounts:
+            - name: vector-config
+              mountPath: /etc/vector/vector-ingress.toml
+              subPath: vector-ingress.toml
+            #- name: vector-es-config
+            #  mountPath: /etc/vector/vector-es.toml
+            #  subPath: vector-es.toml
+            - name: logs
+              mountPath: /data
+            - mountPath: /var/log/
+              name: var-log
+              readOnly: true
+      volumes:
+        - name: vector-config
+          configMap:
+            name: vector-ingress
+        - hostPath:
+            path: /var/log/
+          name: var-log
+        #- name: vector-es-config
+        #  configMap:
+        #    name: vector-es
+
+        - name: logs
+          nfs:
+            path: /data/
+            server: 192.168.1.181
+

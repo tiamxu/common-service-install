@@ -14,7 +14,7 @@ data:
     http.port: 9200
     transport.tcp.port: 9300
     network.host: 0.0.0.0
-    discovery.zen.ping.unicast.hosts: ["es-cluster-0.es-cluster:9300","es-cluster-1.es-cluster:9300","es-cluster-2.es-cluster:9300"]         
+    discovery.zen.ping.unicast.hosts: ["elasticsearch-0.elasticsearch:9300","elasticsearch-1.elasticsearch:9300","elasticsearch-2.elasticsearch:9300"]         
     discovery.zen.minimum_master_nodes: 2
     discovery.zen.fd.ping_timeout: 120s
     discovery.zen.fd.ping_retries: 6

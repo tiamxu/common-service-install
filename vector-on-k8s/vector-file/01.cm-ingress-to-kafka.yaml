@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vector-ingress
+  namespace: middleware
+data:
+  vector-ingress.toml: >
+    [sources.ingress_logs]
+
+    type = "kubernetes_logs"
+
+    #auto_partial_merge = true
+
+    data_dir = "/data/vector/vector_k8s"
+
+    #delay_deletion_ms = 60_000
+
+    #exclude_paths_glob_patterns = [ "**/exclude/**" ]
+
+    #extra_field_selector = "metadata.name=ingress-nginx-controller"
+    
+    extra_label_selector = "app.kubernetes.io/name=ingress-nginx"
+
+    #extra_namespace_label_selector = "app.kubernetes.io/name=ingress-nginx"
+
+    fingerprint_lines = 1
+
+    ignore_older_secs = 600
+
+    include_paths_glob_patterns = [ "**/include/**" ]
+
+    ingestion_timestamp_field = ".ingest_timestamp"
+
+    #oldest_first = true
+
+    read_from = "end"
+
+    #timezone = "local"
+
+    max_line_bytes = 2048576
+
+    max_read_bytes = 2048576
+
+
+    [sinks.out]
+
+    inputs = ["ingress_logs"]
+
+    type = "console"
+
+    encoding.codec = "json"
+
+
+    #[sinks.to_kafka]
+
+    #type = "kafka"
+
+    #inputs = [ "parse_file_logs" ]
+
+    #bootstrap_servers = "kafka-0.kafka:9092,kafka-1.kafka:9092,kafka-2.kafka:9092"
+
+    #topic = "ingress-logs"
+
+    #encoding.codec = "json"
+
+

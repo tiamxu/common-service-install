@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: middleware
+  name: vector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: "vector"
+  template:
+    metadata:
+      labels:
+        name: "vector"
+    spec:
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - elasticsearch
+            topologyKey: kubernetes.io/hostname
+      containers:
+        - image: 'harbor.xxx.net.cn/library/vector:0.42.0-alpine'
+          imagePullPolicy: IfNotPresent
+          name: vector
+          command: [vector]
+          args: ["--config-toml", "/etc/vector/vector-*.toml"]
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 50m
+              memory: 256Mi
+          volumeMounts:
+            - name: vector-kafka-config
+              mountPath: /etc/vector/vector-kafka.toml
+              subPath: vector-kafka.toml
+            - name: vector-es-config
+              mountPath: /etc/vector/vector-es.toml
+              subPath: vector-es.toml
+            - name: dev-logs
+              mountPath: /data1
+            - name: test-logs
+              mountPath: /data
+
+      volumes:
+        - name: vector-kafka-config
+          configMap:
+            name: vector-kafka
+        - name: vector-es-config
+          configMap:
+            name: vector-es
+
+        - name: dev-logs
+          nfs:
+            path: /data/
+            server: 192.168.1.181
+        - name: test-logs
+          nfs:
+            path: /data/
+            server: 192.168.1.4
+

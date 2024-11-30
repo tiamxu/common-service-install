@@ -2,26 +2,25 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
-    app: es-cluster
-  name: es-cluster
+    app.kubernetes.io/name: elasticsearch
+  name: elasticsearch
   namespace: middleware
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: es-cluster
-  serviceName: es-cluster
+      app.kubernetes.io/name: elasticsearch
+  serviceName: elasticsearch
   template:
     metadata:
       labels:
-        app: es-cluster
+        app.kubernetes.io/name: elasticsearch
     spec:
       affinity:
         nodeAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            preference:
-              matchExpressions:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
               - key: app
                 operator: In
                 values:
@@ -30,14 +29,14 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
           - labelSelector:
               matchExpressions:
-              - key: app
+              - key: app.kubernetes.io/name
                 operator: In
                 values:
                 - elasticsearch
             topologyKey: kubernetes.io/hostname
       containers:
-      - name: es-cluster
-        image: 'harbor.xx.com/library/elasticsearch:6.8.5'
+      - name: elasticsearch
+        image: 'harbor.xxx.net.cn/library/elasticsearch:6.8.5'
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 9200
@@ -49,10 +48,10 @@ spec:
         resources:
           limits:
             cpu: "2"
-            memory: 1Gi
+            memory: 3Gi
         env:
           - name: ES_JAVA_OPTS
-            value: '-Xms512m -Xmx512m'
+            value: '-Xms2048m -Xmx2048m'
           - name: POD_NAME
             valueFrom:
               fieldRef:
@@ -76,7 +75,7 @@ spec:
           readOnly: true
       initContainers:
         - name: es-cluster-init
-          image: 'harbor.xx.com/library/alpine:3.20.3'
+          image: 'harbor.xxx.net.cn/library/alpine:3.20.3'
           imagePullPolicy: IfNotPresent
           command:
             - /sbin/sysctl
@@ -85,7 +84,7 @@ spec:
           securityContext:
             privileged: true
         - name: es-cluster-permissions
-          image: 'harbor.xx.com/library/alpine:3.20.3'
+          image: 'harbor.xxx.net.cn/library/alpine:3.20.3'
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -117,5 +116,5 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 10Gi
+            storage: 50Gi
 
