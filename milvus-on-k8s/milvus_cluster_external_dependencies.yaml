@@ -34,6 +34,10 @@ spec:
   config:
     etcd:
       rootPath: milvus-dev
+      #auth:
+      #  enabled: true
+      #  userName: milvus
+      #  password: milvus
     msgChannel:
       chanNamePrefix:
         cluster: milvus-dev
@@ -51,7 +55,7 @@ spec:
   dependencies: 
     etcd:
       external: true
-      endpoints: ["192.168.1.158:2379"]
+      endpoints: ["etcd-0.etcd:2379","etcd-1.etcd:2379","etcd-2.etcd:2379"]
     storage:
       external: true
       endpoint: "192.168.1.246:9000"
