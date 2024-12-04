@@ -12,8 +12,6 @@ filter:
 - query:
     query_string:
       query: "java.lang.NullPointerException"
-      #query: "level: ERROR AND appname: yeemiao-inventory-core"
-      #query: "NOT appname: jobs AND java.lang.NullPointerException"
 
 realert:
   minutes: 10
@@ -34,7 +32,7 @@ alert:
 feishualert_url: "https://open.feishu.cn/open-apis/bot/v2/hook/"
 
 feishualert_botid:
-  "68600be3-9fe0-40cb-a81e-0f9b00b77acf"
+  "xxxx"
 
 feishualert_title:
   "【NullPointerException】 【{appname}】"
