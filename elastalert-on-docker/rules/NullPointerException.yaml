@@ -1,0 +1,50 @@
+# This exemple will provide you every alerts that occured between the sleeping time your configured in your config file.
+# Every match will be send as a unique alert to discord. If you got 3 match, the alerter will send 3 alert to your discord.
+
+name: "NullPointerException"
+type: "frequency"
+index: test-applogs-%Y-%m-%d
+use_strftime_index: true
+query_key: appname
+
+# Exemple query
+filter:
+- query:
+    query_string:
+      query: "java.lang.NullPointerException"
+      #query: "level: ERROR AND appname: yeemiao-inventory-core"
+      #query: "NOT appname: jobs AND java.lang.NullPointerException"
+
+realert:
+  minutes: 10
+timeframe:
+  minutes: 2
+num_events: 10
+
+timestamp_field: "timestamp"
+timestamp_type: "iso"
+query_timezone: ""
+use_local_time: true
+alert_text_type: alert_text_only
+
+#include: ["appname", "message", "time"]
+alert:
+- "elastalert_modules.feishu_alert.FeishuAlert"
+
+feishualert_url: "https://open.feishu.cn/open-apis/bot/v2/hook/"
+
+feishualert_botid:
+  "68600be3-9fe0-40cb-a81e-0f9b00b77acf"
+
+feishualert_title:
+  "【NullPointerException】 【{appname}】"
+
+feishualert_skip:
+  start: "00:00:00"
+  end: "00:01:00"
+
+feishualert_body:
+  "
+  {time}\n
+  {message}
+  "

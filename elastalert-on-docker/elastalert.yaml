@@ -1,0 +1,17 @@
+rules_folder: /opt/elastalert/rules
+run_every:
+  minutes: 1
+buffer_time:
+  minutes: 10
+es_host: 10.11.3.219
+es_port: 9200
+use_ssl: False
+es_username: elastic
+es_password: admin@123,
+verify_certs: False
+writeback_index: elastalert_status
+alert_time_limit:
+  minutes: 5
+disable_rules_on_error: True
+match_enhancements: []
+run_enhancements_first: False
