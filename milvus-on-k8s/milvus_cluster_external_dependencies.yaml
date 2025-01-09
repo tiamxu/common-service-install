@@ -55,7 +55,7 @@ spec:
   dependencies: 
     etcd:
       external: true
-      endpoints: ["etcd-0.etcd:2379","etcd-1.etcd:2379","etcd-2.etcd:2379"]
+      endpoints: ["etcd-0.etcd.middleware:2379","etcd-1.etcd.middleware:2379","etcd-2.etcd.middleware:2379"]
     storage:
       external: true
       endpoint: "192.168.1.246:9000"

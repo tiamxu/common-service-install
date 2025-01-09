@@ -1,0 +1,57 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: prometheus
+  namespace: monitor
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+   app.kubernetes.io/name: prometheus
+  ports:
+    - name: server
+      protocol: TCP
+      port: 9090
+      targetPort: server
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: alertmanager
+  namespace: monitor
+  labels:
+    app.kubernetes.io/name: alertmanager
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+   app.kubernetes.io/name: alertmanager
+  ports:
+    - name: http
+      protocol: TCP
+      port: 9093
+      targetPort: http
+
+---
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: node-exporter
+  name: node-exporter
+  namespace: monitor
+spec:
+  ports:
+  - name: node-exporter
+    port: 9100
+    protocol: TCP
+    targetPort: 9100
+  selector:
+    app: node-exporter
+  sessionAffinity: None
+  type: ClusterIP
+

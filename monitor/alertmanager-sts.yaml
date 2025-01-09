@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alertmanager
+  namespace: monitor
+  labels:
+    app.kubernetes.io/name: alertmanager
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: alertmanager
+  serviceName: alertmanager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: alertmanager
+    spec:
+      containers:
+        - name: config-reload
+          args:
+            - --reload-url=http://$(POD_IP):9093/-/reload
+            - --config-file=/etc/alertmanager/alertmanager.yml
+          image: harbor.xxx.cn/library/prometheus-config-reloader:v0.79.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          resources:
+            limits:
+              memory: 1024Mi
+            requests:
+              memory: 10Mi
+          volumeMounts:
+            - mountPath: /etc/alertmanager/
+              name: config
+        - name: alertmanager
+          image: harbor.xxx.cn/library/prom/alertmanager:v0.27.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config.file=/etc/alertmanager/alertmanager.yml
+            - --storage.path=/alertmanager
+            - --data.retention=2d
+          ports:
+            - containerPort: 9093
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager/
+            - name: alertmanager-data
+              mountPath: /alertmanager
+      securityContext:
+        runAsUser: 0
+      volumes:
+        - name: config
+          configMap:
+            defaultMode: 420
+            name: alertmanager-config
+  volumeClaimTemplates:
+  - metadata:
+      name: alertmanager-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: "csi-rbd-sc"
+      resources:
+        requests:
+          storage: 2Gi
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+
