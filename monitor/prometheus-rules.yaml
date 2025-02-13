@@ -20,3 +20,112 @@ data:
           summary: "{{$labels.instance}}: High Memory usage detected"
           description: "{{$labels.instance}}: Memory usage is above 20% (current value is: {{ $value }}"
 
+    - name: Ceph status
+      rules:
+      - alert: Ceph 实例不健康
+        expr: ceph_health_status != 0
+        for: 0m
+        labels:
+          severity: critical
+          level: 4
+        annotations:
+          at: "ou_1199d79525e146bad9d0a5a46a86a10f"
+          summary: Ceph 实例不健康{{ $labels.instance }})
+          description: "Ceph instance unhealthyn  VALUE = {{ $value }}n  LABELS = {{ $labels }}"
+          recovery_description: "Ceph 实例恢复正常"
+      - alert: 检测到Ceph监视器时钟偏差
+        expr: abs(ceph_monitor_clock_skew_seconds) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph monitor clock skew (instance {{ $labels.instance }})
+          description: "Ceph monitor clock skew detected. Please check ntp and hardware clock settingsn  VALUE = {{ $value     }}n  LABELS = {{ $labels }}"
+      - alert: Ceph监视器存储空间不足
+        expr: ceph_monitor_avail_percent < 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph monitor low space (instance {{ $labels.instance }})
+          description: "Ceph monitor storage is low.n  VALUE = {{ $value }}n  LABELS = {{ $labels }}"
+      - alert: Ceph对象存储守护进程关闭
+        expr: ceph_osd_up == 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ceph OSD Down (instance {{ $labels.instance }})
+          description: "Ceph Object Storage Daemon Downn  VALUE = {{ $value }}n  LABELS = {{ $labels }}"
+      - alert: Ceph高OSD延迟
+        expr: ceph_osd_perf_apply_latency_seconds > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph high OSD latency (instance {{ $labels.instance }})
+          description: "Ceph Object Storage Daemon latency is high. Please check if it doesn't stuck in weird state.n  VALUE     = {{ $value }}n  LABELS = {{ $labels }}"
+      - alert: CephOSD空间不足
+        expr: ceph_osd_utilization > 90
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph OSD low space (instance {{ $labels.instance }})
+          description: "Ceph Object Storage Daemon is going out of space. Please add more disks.n  VALUE = {{ $value }}n      LABELS = {{ $labels }}"
+      - alert: CephOSD重新加权
+        expr: ceph_osd_weight < 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph OSD reweighted (instance {{ $labels.instance }})
+          description: "Ceph Object Storage Daemon takes too much time to resize.n  VALUE = {{ $value }}n  LABELS = {{     $labels }}"
+      - alert: CephPG下降
+        expr: ceph_pg_down > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ceph PG down (instance {{ $labels.instance }})
+          description: "Some Ceph placement groups are down. Please ensure that all the data are available.n  VALUE = {{     $value }}n  LABELS = {{ $labels }}"
+      - alert: CephPG不完整
+        expr: ceph_pg_incomplete > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ceph PG incomplete (instance {{ $labels.instance }})
+          description: "Some Ceph placement groups are incomplete. Please ensure that all the data are available.n  VALUE =     {{ $value }}n  LABELS = {{ $labels }}"
+      - alert: CephPG不一致
+        expr: ceph_pg_inconsistent > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph PG inconsistent (instance {{ $labels.instance }})
+          description: "Some Ceph placement groups are inconsistent. Data is available but inconsistent across nodes.n  VALUE     = {{ $value }}n  LABELS = {{ $labels }}"
+      - alert: CephPG激活时间长
+        expr: ceph_pg_activating > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph PG activation long (instance {{ $labels.instance }})
+          description: "Some Ceph placement groups are too long to activate.n  VALUE = {{ $value }}n  LABELS = {{ $labels }}"
+      - alert: Ceph PG回填已满
+        expr: ceph_pg_backfill_toofull > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ceph PG backfill full (instance {{ $labels.instance }})
+          description: "Some Ceph placement groups are located on full Object Storage Daemon on cluster. Those PGs can be     unavailable shortly. Please check OSDs, change weight or reconfigure CRUSH rules.n  VALUE = {{ $value }}n  LABELS     = {{ $labels }}"
+      - alert: Ceph PG不可用
+        expr: ceph_pg_total - ceph_pg_active > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: Ceph PG unavailable (instance {{ $labels.instance }})
+          description: "Some Ceph placement groups are unavailable.n  VALUE = {{ $value }}n  LABELS = {{ $labels }}"

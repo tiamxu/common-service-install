@@ -23,7 +23,7 @@ spec:
             - --reload-url=http://$(POD_IP):9090/-/reload
             - --config-file=/etc/prometheus/prometheus.yml
             - --watched-dir=/etc/prometheus/rules
-          image: harbor.xxx.cn/library/prometheus-config-reloader:v0.79.0
+          image: harbor.yeemiao.net.cn/library/prometheus-config-reloader:v0.79.0
           imagePullPolicy: IfNotPresent
           env:
             - name: POD_IP
@@ -39,7 +39,7 @@ spec:
             - mountPath: /etc/prometheus/
               name: config
         - name: prometheus
-          image: harbor.xxx.cn/library/prometheus:v3.0.0
+          image: harbor.yeemiao.net.cn/library/prometheus:v3.0.0
           imagePullPolicy: IfNotPresent
           args:
             - --storage.tsdb.path=/prometheus

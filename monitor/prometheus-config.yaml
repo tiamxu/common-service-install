@@ -9,13 +9,16 @@ data:
       scrape_interval: 15s
       evaluation_interval: 15s
       external_labels:
-        cluster: dev
+        cluster: dev1
     rule_files:
     - /etc/prometheus/rules/*.yml
     alerting:
       alertmanagers:
        - static_configs:
          - targets: ["alertmanager.monitor:9093"]
+    remote_read:
+      - url: "http://192.168.1.158:9095/api/v1/read"
+        read_recent: true
     scrape_configs:
     - job_name: 'kubernetes-nodes'
       kubernetes_sd_configs:
@@ -119,6 +122,12 @@ data:
       static_configs:
       - targets: ['kube-state-metrics.kube-system.svc.cluster.local:8080']  
 
+    - job_name: 'node-process'
+      scrape_interval: 15s
+      static_configs:
+      - targets: ['192.168.1.238:2121']
+
+
     - job_name: 'kubernetes-service-endpoints'
       kubernetes_sd_configs:
       - role: endpoints
@@ -203,6 +212,7 @@ data:
         action: replace
 
     - job_name: 'gpu-exporter' 
+      scrape_interval: 15s
       static_configs:
       - targets: ['192.168.1.228:9835']
         labels:
@@ -214,7 +224,10 @@ data:
         - http_2xx
       static_configs:
       - targets:
-        - https://kibana-dev.xxx
+        - https://conf.yeemiao.com
+        - https://www.threegene.cn
+        - https://doctorzs.threegene.cn
+        - https://kibana-dev.yeemiao.net
       relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -222,4 +235,30 @@ data:
         target_label: instance
       - target_label: __address__
         replacement: 192.168.1.158:9115 
+
+    - job_name: 'ceph'
+      honor_labels: true
+      http_sd_configs:
+      - url: http://192.168.1.158:8765/sd/prometheus/sd-config?service=mgr-prometheus
+      relabel_configs:
+      - source_labels: [__address__]
+        regex: '(.*):9283'
+        replacement: '192.168.1.158:9283'
+        target_label: __address__
+        action: replace
+
+
+    - job_name: 'node'
+      http_sd_configs:
+      - url: http://192.168.1.158:8765/sd/prometheus/sd-config?service=node-exporter
+
+
+    - job_name: 'ceph-exporter'
+      honor_labels: true
+      http_sd_configs:
+      - url: http://192.168.1.158:8765/sd/prometheus/sd-config?service=ceph-exporter
+
+    - job_name: 'nvmeof'
+      http_sd_configs:
+      - url: http://192.168.1.158:8765/sd/prometheus/sd-config?service=nvmeof
 

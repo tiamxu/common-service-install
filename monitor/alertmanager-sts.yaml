@@ -22,7 +22,7 @@ spec:
           args:
             - --reload-url=http://$(POD_IP):9093/-/reload
             - --config-file=/etc/alertmanager/alertmanager.yml
-          image: harbor.xxx.cn/library/prometheus-config-reloader:v0.79.0
+          image: harbor.yeemiao.net.cn/library/prometheus-config-reloader:v0.79.0
           imagePullPolicy: IfNotPresent
           env:
             - name: POD_IP
@@ -38,7 +38,7 @@ spec:
             - mountPath: /etc/alertmanager/
               name: config
         - name: alertmanager
-          image: harbor.xxx.cn/library/prom/alertmanager:v0.27.0
+          image: harbor.yeemiao.net.cn/library/prom/alertmanager:v0.27.0
           imagePullPolicy: IfNotPresent
           args:
             - --config.file=/etc/alertmanager/alertmanager.yml

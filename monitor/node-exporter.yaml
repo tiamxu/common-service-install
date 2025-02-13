@@ -26,7 +26,7 @@ spec:
         - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/pods/.+)($|/)
         - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
         - --collector.netclass.ignored-devices=^(veth.*)$
-        image: harbor.xxx.cn/library/prom/node-exporter:v1.8.2
+        image: harbor.yeemiao.net.cn/library/prom/node-exporter:v1.8.2
         imagePullPolicy: IfNotPresent
         name: node-exporter
         ports:

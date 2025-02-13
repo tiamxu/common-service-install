@@ -22,9 +22,33 @@ data:
         group_wait: 10s
         group_interval: 30s
         group_by: [alertname, namespace]
+        #matchers:
+        #- severity =~ "warning|critical"
+      - receiver: 'ceph-dashboard'
+        group_wait: 10s
+        group_interval: 30s
+        group_by: ['alertname']
         matchers:
-        - severity =~ "warning|critical"
+        - type =~ "ceph_default"
+
+    # 定义告警接收器
     receivers:
     - name: 'default'
       webhook_configs:
       - url: http://192.168.1.220:8800/webhook?type=fs&tpl=feishu&split=false&fsurl=https://open.feishu.cn/open-apis/bot/v2/hook/bf8bb912-bc2e-40ad-9533-fcb8068aa621
+      - url: http://192.168.1.220:8800/webhook?type=dd&tpl=dingtalk&ddurl=https://oapi.dingtalk.com/robot/send?access_token=9ef3af0bc7052966a73c6642eed0e7c90e35a4dd6860887dd9029c65255d5abd
+        send_resolved: true
+    - name: 'feishu'
+      webhook_configs:
+      - url: http://192.168.1.220:8800/webhook?type=fs&tpl=feishu&split=false&fsurl=https://open.feishu.cn/open-apis/bot/v2/hook/bf8bb912-bc2e-40ad-9533-fcb8068aa621
+        send_resolved: true
+    - name: 'dingtalk'
+      webhook_configs:
+      - url: http://192.168.1.220:8800/webhook?type=dd&tpl=dingtalk&ddurl=https://oapi.dingtalk.com/robot/send?access_token=9ef3af0bc7052966a73c6642eed0e7c90e35a4dd6860887dd9029c65255d5abd
+        send_resolved: true
+
+    - name: 'ceph-dashboard'
+      webhook_configs:
+      - url: 'https://open.feishu.cn/open-apis/bot/v2/hook/bf8bb912-bc2e-40ad-9533-fcb8068aa621'
+        send_resolved: true
+      
